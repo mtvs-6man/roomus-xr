@@ -2,10 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine;
+using System.IO;
 
 public class Deco_UIManager : MonoBehaviour
 {
     public static Deco_UIManager Instance;
+
+    public GameObject screenManager;
+    JM_ScreenManager screenCode;
 
     public InputField nameField;
     public Toggle publicToggle;
@@ -36,9 +40,16 @@ public class Deco_UIManager : MonoBehaviour
         posting.SetActive(false);
         trContent = (RectTransform)library.transform.Find("Viewport").transform.Find("Content");
 
-        foreach (GameObject go in Deco_Json.Instance.objects.datas)
+        // 추후에 서버에 있는 모든 Json파일을 요청해서 받는 식으로 전환
+        DirectoryInfo di = new DirectoryInfo(Application.dataPath + "/LocalServer");
+        foreach (FileInfo file in di.GetFiles())
         {
-            AddContent(go.GetComponent<Deco_Idx>().Idx);
+            string type = file.Name.Substring(file.Name.Length - 3, 3);
+            if (type == "txt")
+            {
+                FBXJson fbxJson = JsonUtility.FromJson<FBXJson>(File.ReadAllText(file.FullName));
+                AddContent(fbxJson);
+            }
         }
 
         library.SetActive(false);
@@ -48,19 +59,22 @@ public class Deco_UIManager : MonoBehaviour
 
         publicToggle.onValueChanged.AddListener(OnPublicChanged);
         privateToggle.onValueChanged.AddListener(OnPrivateChanged);
+
+        // Screen (Jaemin)
+        screenCode = screenManager.GetComponent<JM_ScreenManager>();
     }
 
-    void OnPublicChanged(bool b)
+    void OnPublicChanged(bool value)
     {
-        if (b) 
+        if (value) 
             privateToggle.isOn = false;
         else
             privateToggle.isOn = true;
     }
 
-    void OnPrivateChanged(bool b)
+    void OnPrivateChanged(bool value)
     {
-        if (b)
+        if (value)
             publicToggle.isOn = false;
         else
             publicToggle.isOn = true;
@@ -74,11 +88,12 @@ public class Deco_UIManager : MonoBehaviour
             library.SetActive(true);    
     }
 
-    void AddContent(int id)
+    void AddContent(FBXJson fbxJson)
     {
         GameObject item = Instantiate(furnitItem, trContent);
-        item.name = id.ToString();
-        item.GetComponentInChildren<Text>().text = id.ToString();
+        item.name = fbxJson.furnitName;
+        item.GetComponent<Deco_FurnitItem>().fbxJson = fbxJson;
+        item.GetComponentInChildren<Text>().text = fbxJson.furnitName;
     }
 
     public void OnPostClicked()
@@ -86,7 +101,13 @@ public class Deco_UIManager : MonoBehaviour
         if (posting.activeSelf)
             posting.SetActive(false);
         else
+        {
             posting.SetActive(true);
+            screenCode.screen.SetActive(true);
+            screenCode.isDark = true;
+            screenCode.isStart = true;
+            screenCode.alpha = 1;
+        }
     }
 
     public void OnUploadClicked()

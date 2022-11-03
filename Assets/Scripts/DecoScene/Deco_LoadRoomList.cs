@@ -28,13 +28,17 @@ public class Deco_LoadRoomList : MonoBehaviour
         if(Instance == null)
             Instance = this;
         else
-            Destroy(gameObject);
+        {
+            Destroy(Instance.gameObject);
+            Instance = this;
+        }
 
         DontDestroyOnLoad(gameObject);
     }
     // Start is called before the first frame update
     void Start()
     {
+        Directory.CreateDirectory(Application.dataPath + "/RoomInfo");
         DirectoryInfo di = new DirectoryInfo(Application.dataPath + "/RoomInfo");
         foreach (FileInfo File in di.GetFiles())
         {
